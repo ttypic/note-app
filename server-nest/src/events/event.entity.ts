@@ -1,8 +1,9 @@
 import { Column, CreatedAt, ForeignKey, Model, Table, Unique } from 'sequelize-typescript';
 import { User } from '../users/user.entity';
 
+// noinspection JSAnnotator
 @Table
-export class Event extends Model {
+export class Event extends Model<Event> {
   @Column
   @ForeignKey(() => User)
   userId: number;
