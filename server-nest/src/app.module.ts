@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { WsModule } from './ws/ws.module';
-import { NotesModule } from './notes/notes.module';
 
 @Module({
   imports: [
