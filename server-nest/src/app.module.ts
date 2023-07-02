@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
+import { WsModule } from './ws/ws.module';
+import { NotesModule } from './notes/notes.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), AuthModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    AuthModule,
+    WsModule,
+  ],
 })
-export class AppModule {}
+export class AppModule {
+}

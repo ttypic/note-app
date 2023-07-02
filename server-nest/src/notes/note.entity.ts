@@ -1,4 +1,4 @@
-import { Column, CreatedAt, ForeignKey, Model, PrimaryKey, Table, UpdatedAt } from 'sequelize-typescript';
+import { Column, ForeignKey, Index, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { User } from '../users/user.entity';
 
 // noinspection JSAnnotator
@@ -8,18 +8,13 @@ export class Note extends Model<Note> {
   @Column
   id: string;
 
+  @Index
   @Column
   @ForeignKey(() => User)
   userId: number;
 
   @Column
   text: string;
-
-  @CreatedAt
-  creationDate: Date;
-
-  @UpdatedAt
-  updatedOn: Date;
 }
 
 // noinspection JSAnnotator
@@ -29,6 +24,7 @@ export class SharedNote extends Model<SharedNote> {
   @ForeignKey(() => User)
   userId: number;
 
+  @Index
   @Column
   @ForeignKey(() => Note)
   noteId: string;

@@ -1,9 +1,14 @@
-import { Column, CreatedAt, ForeignKey, Model, Table, Unique } from 'sequelize-typescript';
+import { Column, ForeignKey, IsUUID, Model, PrimaryKey, Table, Unique } from 'sequelize-typescript';
 import { User } from '../users/user.entity';
 
 // noinspection JSAnnotator
 @Table
 export class Event extends Model<Event> {
+  @IsUUID(4)
+  @PrimaryKey
+  @Column
+  serverId: string;
+
   @Column
   @ForeignKey(() => User)
   userId: number;
@@ -16,16 +21,7 @@ export class Event extends Model<Event> {
   clientId: string;
 
   @Column
-  command: string;
-
-  @Column
-  sessionId: string;
-
-  /**
-   * Rejected event's clientId (because of duplication or conflict)
-   */
-  @Column
-  rejectedClientId: string;
+  eventType: string;
 
   @Column
   noteId: string;
@@ -39,6 +35,9 @@ export class Event extends Model<Event> {
   @Column
   replacement: string;
 
-  @CreatedAt
-  creationDate: Date;
+  /**
+   * Rejected event's clientId (because of duplication or conflict)
+   */
+  @Column
+  rejectedClientId: string;
 }
