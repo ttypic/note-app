@@ -1,27 +1,41 @@
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { OnEvent } from '@nestjs/event-emitter';
-import WebSocket, { Server } from 'ws';
-import { EventType } from '../events/event.type';
-import { EventRejectedPayload, NoteCreatedPayload, NoteSharedPayload, NoteUpdatedPayload } from '../events/events.dto';
-import { NotesService } from '../notes/notes.service';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import WebSocket, { OPEN, Server } from 'ws';
 import { JwtService } from '@nestjs/jwt';
+import { EventType, RequestType } from '../notes/event.type';
 import { getJwtSecret } from '../auth/secrtet';
+import {
+  NoteCreateClientRequest,
+  NoteSharedResponse,
+  NoteUpdateClientRequest,
+  UserStateResponse,
+} from '../notes/notes.dto';
+import { AppliedEvent } from '../notes/note.entity';
 
-const AUTH_CHECK = 'authChecked';
+interface Session {
+  userId: number;
+  sessionId: string;
+}
+
+interface AuthRequest {
+  accessToken: string;
+  sessionId: string;
+}
 
 @WebSocketGateway(8001, { path: 'ws' })
 export class WsGateway {
 
-  constructor(private readonly noteService: NotesService, private jwtService: JwtService) {
-  }
+  authorizedClients = new WeakMap<WebSocket, Session>();
 
-  authorizedClients = new WeakMap<WebSocket, number>();
+  constructor(private jwtService: JwtService, private eventEmitter: EventEmitter2) {
+  }
 
   @WebSocketServer()
   server: Server;
 
-  @SubscribeMessage(AUTH_CHECK)
-  async handelAuth(@ConnectedSocket() client: WebSocket, @MessageBody('accessToken') accessToken: string) {
+  @SubscribeMessage(RequestType.authCheckRequest)
+  async handelAuth(@ConnectedSocket() client: WebSocket, @MessageBody() authRequest: AuthRequest) {
+    const { accessToken, sessionId } = authRequest;
     try {
       const payload: JwtPayload = await this.jwtService.verifyAsync(
         accessToken,
@@ -30,31 +44,31 @@ export class WsGateway {
         },
       );
       const userId = payload.sub;
-      this.authorizedClients.set(client, userId);
-      return { success: true };
+      this.authorizedClients.set(client, { userId, sessionId });
+      this.eventEmitter.emit(RequestType.userConnectRequest, { userId, sessionId });
     } catch {
       await client.close(1011, 'authentication failed');
     }
   }
 
-  @SubscribeMessage(EventType.noteCreated)
-  async handelNoteCreatedOnClient(@ConnectedSocket() client: WebSocket, @MessageBody() data: NoteCreatedPayload) {
+  @SubscribeMessage(RequestType.noteCreateRequest)
+  async handelNoteCreateRequest(@ConnectedSocket() client: WebSocket, @MessageBody() data: NoteCreateClientRequest) {
     if (this.authorizedClients.has(client)) {
-      await this.noteService.createNote(data);
+      this.eventEmitter.emit(RequestType.noteCreateRequest, data);
     }
   }
 
-  @SubscribeMessage(EventType.noteUpdated)
-  async handelNoteUpdatedOnClient(@ConnectedSocket() client: WebSocket, @MessageBody() data: NoteUpdatedPayload) {
+  @SubscribeMessage(RequestType.noteUpdateRequest)
+  async handelNoteUpdateRequest(@ConnectedSocket() client: WebSocket, @MessageBody() data: NoteUpdateClientRequest) {
     if (this.authorizedClients.has(client)) {
-      await this.noteService.updateNote(data);
+      this.eventEmitter.emit(RequestType.noteUpdateRequest, data);
     }
   }
 
   @OnEvent(EventType.noteCreated)
-  handelNoteCreated(data: NoteCreatedPayload) {
+  handelNoteCreated(data: AppliedEvent) {
     this.server.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && this.authorizedClients.get(client) == data.userId) {
+      if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.noteCreated,
           data,
@@ -64,9 +78,9 @@ export class WsGateway {
   }
 
   @OnEvent(EventType.noteUpdated)
-  handelNoteUpdated(data: NoteUpdatedPayload) {
+  handelNoteUpdated(data: AppliedEvent) {
     this.server.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && this.authorizedClients.get(client) == data.userId) {
+      if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.noteUpdated,
           data,
@@ -76,9 +90,9 @@ export class WsGateway {
   }
 
   @OnEvent(EventType.noteShared)
-  handleNoteShared(data: NoteSharedPayload) {
+  handleNoteShared(data: NoteSharedResponse) {
     this.server.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && this.authorizedClients.get(client) == data.userId) {
+      if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.noteShared,
           data,
@@ -88,11 +102,23 @@ export class WsGateway {
   }
 
   @OnEvent(EventType.eventRejected)
-  handleEventRejected(data: EventRejectedPayload) {
+  handleEventRejected(data: AppliedEvent) {
     this.server.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && this.authorizedClients.get(client) == data.userId) {
+      if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.eventRejected,
+          data,
+        }));
+      }
+    });
+  }
+
+  @OnEvent(EventType.userConnected)
+  handleUserConnected(data: UserStateResponse) {
+    this.server.clients.forEach(client => {
+      if (client.readyState === OPEN && this.authorizedClients.get(client)?.sessionId == data.sessionId) {
+        client.send(JSON.stringify({
+          event: EventType.userConnected,
           data,
         }));
       }

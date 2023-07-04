@@ -1,14 +1,19 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
-import uuid from 'uuid';
+import { Op } from 'sequelize';
+import * as uuid from 'uuid';
 import { SEQUELIZE } from '../db/consts';
-import { Note, SharedNote } from './note.entity';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UsersService } from '../users/users.service';
-import { Event } from '../events/event.entity';
-import { EventType } from '../events/event.type';
-import { NoteCreatedPayload, NoteUpdatedPayload } from '../events/events.dto';
-import { UserStateResponse } from './notes.dto';
+import { User } from '../users/user.entity';
+import { EventType } from './event.type';
+import { AppliedEvent, Note, SharedNote } from './note.entity';
+import {
+  NoteCreateRequest,
+  NoteSharedResponse,
+  NoteUpdatedResponse,
+  NoteUpdateRequest,
+  UserStateResponse,
+} from './notes.dto';
 
 function applyUpdate(text: string, startSelection: number, endSelection: number, replacement: string): string {
   return text.slice(0, startSelection) + replacement + text.slice(endSelection);
@@ -20,50 +25,66 @@ export class NotesService {
     @Inject(SEQUELIZE)
     private sequelize: Sequelize,
     private usersService: UsersService,
-    private eventEmitter: EventEmitter2,
   ) {
   }
 
-  async createNote(data: NoteCreatedPayload) {
-    const { id: clientId, userId, noteId } = data;
-    const event = await this.sequelize.transaction(async tx => {
-      await this.sequelize.getRepository(Note).create({
-        id: noteId,
-        userId,
-        text: '',
-      }, { transaction: tx });
+  async createNote(data: NoteCreateRequest): Promise<AppliedEvent> {
+    const { clientId: clientId, userId, noteId } = data;
+    try {
+      return await this.sequelize.transaction(async tx => {
+        await this.sequelize.getRepository(Note).create({
+          id: noteId,
+          userId,
+          text: '',
+          version: 0,
+        }, { transaction: tx });
 
-      return this.sequelize.getRepository(Event).create({
+        return this.sequelize.getRepository(AppliedEvent).create({
+          serverId: uuid.v4(),
+          eventStoreId: data.eventId,
+          userId,
+          clientId,
+          eventType: EventType.noteCreated,
+          noteId,
+        }, { transaction: tx });
+      });
+    } catch {
+      return await this.sequelize.getRepository(AppliedEvent).create({
         serverId: uuid.v4(),
+        eventStoreId: data.eventId,
         userId,
-        clientId,
-        eventType: EventType.noteCreated,
+        clientId: uuid.v4(),
+        eventType: EventType.eventRejected,
         noteId,
-      }, { transaction: tx });
-    });
-
-    this.eventEmitter.emit(EventType.noteCreated, event);
+        rejectedClientId: clientId,
+      });
+    }
   }
 
-  async updateNote(data: NoteUpdatedPayload) {
-    const { id: clientId, userId, noteId, startSelection, endSelection, replacement } = data;
+  async updateNote(data: NoteUpdateRequest): Promise<NoteUpdatedResponse> {
+    const { clientId: clientId, userId, noteId, startSelection, endSelection, replacement, version } = data;
 
     try {
-      const { event, userIds } = await this.sequelize.transaction(async tx => {
+      return await this.sequelize.transaction(async tx => {
         const note = await this.sequelize.getRepository(Note).findByPk(noteId, {
           transaction: tx,
-          lock: tx.LOCK.UPDATE,
         });
 
-        await this.sequelize.getRepository(Note).update({
+        // noinspection TypeScriptValidateTypes
+        const [affectedCount] = await this.sequelize.getRepository(Note).update({
           text: applyUpdate(note.text, startSelection, endSelection, replacement),
+          version,
         }, {
-          where: { id: noteId },
+          where: { id: noteId, version: { [Op.lt]: version } },
           transaction: tx,
         });
 
-        const event = this.sequelize.getRepository(Event).create({
+        if (affectedCount === 0) throw Error('Version conflict');
+
+        const appliedEvent = await this.sequelize.getRepository(AppliedEvent).create({
           serverId: uuid.v4(),
+          eventStoreId: data.eventId,
+          noteVersion: version,
           userId,
           clientId,
           eventType: EventType.noteUpdated,
@@ -76,49 +97,44 @@ export class NotesService {
         const sharedUsers = await this.sequelize.getRepository(SharedNote).findAll({
           where: { noteId },
           transaction: tx,
-          lock: tx.LOCK.UPDATE,
         });
 
         const userIds = [...sharedUsers.map(it => it.userId), userId];
 
-        return { event, userIds };
+        return { appliedEvent, userIds };
       });
-
-      userIds.forEach(it => {
-        this.eventEmitter.emit(EventType.noteUpdated, { ...event, userId: it });
-      });
-    } catch (error) {
-      const event = await this.sequelize.getRepository(Event).create({
+    } catch {
+      const appliedEvent = await this.sequelize.getRepository(AppliedEvent).create({
         serverId: uuid.v4(),
+        eventStoreId: data.eventId,
         userId,
         clientId: uuid.v4(),
         eventType: EventType.eventRejected,
         noteId,
         rejectedClientId: clientId,
       });
-      this.eventEmitter.emit(EventType.eventRejected, event);
+      return { appliedEvent, userIds: [userId] };
     }
   }
 
-  async shareNote(userId: number, noteId: string, sharedWith: string) {
+  async shareNote(userId: number, noteId: string, sharedWith: string): Promise<NoteSharedResponse> {
     const sharedWithUser = await this.usersService.tryFindOne(sharedWith);
     if (sharedWithUser == null) throw new BadRequestException();
-    const event = await this.sequelize.transaction(async tx => {
+    return this.sequelize.transaction(async tx => {
       await this.sequelize.getRepository(SharedNote).create({
         noteId,
         userId: sharedWithUser.id,
       }, { transaction: tx });
-      return this.sequelize.getRepository(Event).create({
-        serverId: uuid.v4(),
-        userId,
-        eventType: EventType.noteShared,
-        noteId,
+      const note = await this.sequelize.getRepository(Note).findByPk(noteId, {
+        transaction: tx,
       });
+      return { userId: sharedWithUser.id, note };
     });
-    this.eventEmitter.emit(EventType.noteShared, event);
   }
 
-  async getUserState(userId: number): Promise<UserStateResponse> {
+  async getUserState(userId: number, sessionId: string): Promise<UserStateResponse> {
+    const user = await this.sequelize.getRepository(User).findByPk(userId);
+
     return this.sequelize.transaction(async tx => {
       const notes = await this.sequelize.getRepository(Note).findAll({
         where: { userId: userId },
@@ -135,7 +151,7 @@ export class NotesService {
         transaction: tx,
       });
 
-      const lastEvent = await this.sequelize.getRepository(Event).findAll({
+      const lastEvent = await this.sequelize.getRepository(AppliedEvent).findAll({
         limit: 1,
         order: [
           ['createdAt', 'DESC'],
@@ -144,10 +160,12 @@ export class NotesService {
       });
 
       return {
+        sessionId,
         userId,
+        username: user.username,
         notes,
         sharedNotes,
-        lastEventTimestamp: lastEvent[0]?.createdAt,
+        lastEventId: lastEvent[0]?.eventStoreId ?? 0,
       };
     });
   }
