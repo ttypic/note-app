@@ -24,8 +24,14 @@ export class AuthService {
     };
   }
 
-  async signUp(username: string, password: string): Promise<void> {
+  async signUp(username: string, password: string): Promise<{ accessToken: string }> {
     const hashed = await hash(password, SALT_ROUNDS);
-    await this.usersService.save(username, hashed);
+    const user = await this.usersService.save(username, hashed);
+
+    const payload: JwtPayload = { sub: user.id, username: user.username };
+
+    return {
+      accessToken: await this.jwtService.signAsync(payload),
+    };
   }
 }
