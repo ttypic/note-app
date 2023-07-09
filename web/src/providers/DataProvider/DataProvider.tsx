@@ -89,7 +89,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
         case EventType.noteUpdated: {
           const localChange = currentLocalChangeRef.current?.id === data.clientId;
           noteIdToVersion.current[data.noteId] = data.noteVersion;
-          setNotes(prevNotes => prevNotes.map(it => {
+          const noteUpdater = (prevNotes: Note[]) => prevNotes.map(it => {
             if (it.id !== data.noteId) return it;
 
             const serverText = applyUpdate(it.text, data.startSelection, data.endSelection, data.replacement);
@@ -106,7 +106,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
               text: serverText,
               version: data.noteVersion,
             } as Note;
-          }));
+          });
+          setNotes(noteUpdater);
+          setSharedNotes(noteUpdater);
           if (currentLocalChangeRef.current === null) return;
           if (localChange) {
             processNext();

@@ -36,7 +36,6 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
         selectionRef.current.start += shift;
         selectionRef.current.end += shift;
       }
-      console.log('applied', payload.change, shift, selectionRef.current);
     },
   });
   const valueRef = useValueRef(value);
@@ -72,7 +71,6 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
       const cursorPosition = getCursorPosition(textareaRef.current);
       if (!cursorPosition) return;
       selectionRef.current = cursorPosition;
-      console.log('listen', selectionRef.current);
     };
 
     document.addEventListener('selectionchange', listener);
