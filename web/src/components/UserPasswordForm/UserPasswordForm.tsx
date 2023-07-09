@@ -6,7 +6,7 @@ import { useInputChange } from '../../utils/useElementChange';
 
 interface UserPasswordFormProps {
   loading: boolean;
-  submitButtonText: string;
+  formIsForLogin?: boolean;
   children?: React.ReactNode;
 
   onSubmit(username: string, password: string): void;
@@ -14,7 +14,7 @@ interface UserPasswordFormProps {
 
 export const UserPasswordForm: React.FC<UserPasswordFormProps> = (props) => {
   const {
-    submitButtonText,
+    formIsForLogin,
     loading,
     onSubmit,
     children,
@@ -33,9 +33,21 @@ export const UserPasswordForm: React.FC<UserPasswordFormProps> = (props) => {
 
   return (
     <Form onSubmit={handleFormSubmit}>
-      <Input type='text' placeholder='Username' value={username} onChange={handleUsernameChange} />
-      <Input type='password' placeholder='Password' value={password} onChange={handlePasswordChange} />
-      <Button disabled={!username || !password} loading={loading} type='submit'>{submitButtonText}</Button>
+      <Input type='text'
+             placeholder='Username'
+             autoComplete='username'
+             value={username}
+             onChange={handleUsernameChange} />
+      <Input type='password'
+             placeholder='Password'
+             autoComplete={formIsForLogin ? 'new-password' : 'current-password'}
+             value={password}
+             onChange={handlePasswordChange} />
+      <Button disabled={!username || !password}
+              loading={loading}
+              type='submit'>
+        {formIsForLogin ? 'Login' : 'Sign Up'}
+      </Button>
       {children}
     </Form>
   );

@@ -1,6 +1,6 @@
 import styled, { createGlobalStyle } from 'styled-components';
 import { normalize } from 'polished';
-import { sm } from 'global/deviceWidths';
+import { overlayBgColor } from 'global/colors';
 
 export const GlobalStyles = createGlobalStyle`
   ${normalize()}
@@ -17,29 +17,9 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   :root {
-
-    //region backgrounds
-    --main-bg-color: #f6f6f6;
-    --overlay-bg-color: #e5e5e5;
-    --note-bg-color: #fff;
-    //endregion
-
-    //region fonts
-
-    //endregion
-
-    //region font colors
-    --main-color: rgba(0, 0, 0, 0.4);
-    //endregion
-
     //region shadows
     --material-box-shadow: 1px 0 6px rgba(0, 0, 0, 0.04), 1px 0 4px rgba(0, 0, 0, 0.12);
     //endregion
-  }
-
-  @media (max-width: ${sm}px) {
-    :root {
-    }
   }
 `;
 
@@ -50,7 +30,7 @@ export const AppLayout = styled.div`
   align-items: center;
   min-height: 100vh;
 
-  background-color: var(--overlay-bg-color);
+  background-color: ${overlayBgColor};
 
   //noinspection CssInvalidPropertyValue
   @supports (-webkit-touch-callout: none) {

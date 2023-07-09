@@ -71,7 +71,12 @@ export class WsGateway {
       if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.noteCreated,
-          data,
+          data: {
+            serverId: data.serverId,
+            clientId: data.clientId,
+            userId: data.userId,
+            noteId: data.noteId,
+          },
         }));
       }
     });
@@ -83,7 +88,16 @@ export class WsGateway {
       if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.noteUpdated,
-          data,
+          data: {
+            serverId: data.serverId,
+            clientId: data.clientId,
+            userId: data.userId,
+            noteId: data.noteId,
+            noteVersion: data.noteVersion,
+            startSelection: data.startSelection,
+            endSelection: data.endSelection,
+            replacement: data.replacement,
+          },
         }));
       }
     });
@@ -107,7 +121,12 @@ export class WsGateway {
       if (client.readyState === OPEN && this.authorizedClients.get(client)?.userId == data.userId) {
         client.send(JSON.stringify({
           event: EventType.eventRejected,
-          data,
+          data: {
+            serverId: data.serverId,
+            clientId: data.clientId,
+            userId: data.userId,
+            rejectedClientId: data.rejectedClientId,
+          },
         }));
       }
     });

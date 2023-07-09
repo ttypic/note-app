@@ -26,7 +26,22 @@ export interface ExternalNoteChange {
   clientId: string;
   userId: number;
   noteId: string;
+  noteVersion: number;
   startSelection: number;
   endSelection: number;
   replacement: string;
+}
+
+export enum EventType {
+  noteCreated = 'noteCreated',
+  noteUpdated = 'noteUpdated',
+  noteShared = 'noteShared',
+  userConnected = 'userConnected',
+  eventRejected = 'eventRejected',
+}
+
+export enum RequestType {
+  authCheckRequest = 'authCheckRequest',
+  noteCreateRequest = 'noteCreateRequest',
+  noteUpdateRequest = 'noteUpdateRequest',
 }

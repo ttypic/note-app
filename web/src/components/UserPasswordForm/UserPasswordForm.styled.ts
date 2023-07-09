@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { primaryColor } from 'global/colors';
 
 export const Form = styled.form`
   max-width: 360px;
@@ -13,7 +14,7 @@ export const Message = styled.p`
 `;
 
 export const Anchor = styled.a`
-  color: #4CAF50;
+  color: ${primaryColor};
   text-decoration: none;
   cursor: pointer;
 `;

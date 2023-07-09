@@ -31,7 +31,7 @@ export const SignUp: React.FC<SignUpProps> = ({ gotoSignIn, onSignUp }) => {
   }, [onSignUp, makeCall]);
 
   return (
-    <UserPasswordForm submitButtonText='Sign Up' loading={loading} onSubmit={signUp}>
+    <UserPasswordForm loading={loading} onSubmit={signUp}>
       <Message>Already registered? <Anchor onClick={gotoSignIn}>Sign In</Anchor></Message>
       {error && <Error>User with the same username already exists</Error>}
     </UserPasswordForm>

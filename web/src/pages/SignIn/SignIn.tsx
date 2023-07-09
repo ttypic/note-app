@@ -28,7 +28,7 @@ export const SignIn: React.FC<SignInProps> = ({ gotoSignUp, onSignIn }) => {
   }, [onSignIn, makeCall]);
 
   return (
-    <UserPasswordForm submitButtonText='Login' loading={loading} onSubmit={signIn}>
+    <UserPasswordForm formIsForLogin loading={loading} onSubmit={signIn}>
       <Message>Not registered? <Anchor onClick={gotoSignUp}>Create an account</Anchor></Message>
       {error && <Error>Wrong password</Error>}
     </UserPasswordForm>

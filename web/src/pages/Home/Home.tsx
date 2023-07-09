@@ -1,4 +1,6 @@
 import React from 'react';
+import { DataProvider } from 'providers/DataProvider';
+import { HomeContent } from './HomeContent/HomeContent';
 
 interface HomeProps {
   accessToken: string;
@@ -6,8 +8,10 @@ interface HomeProps {
   logout(): void;
 }
 
-export const Home: React.FC<HomeProps> = ({ accessToken }) => {
+export const Home: React.FC<HomeProps> = ({ accessToken, logout }) => {
   return (
-    <div>Home</div>
+    <DataProvider accessToken={accessToken} logout={logout}>
+      <HomeContent />
+    </DataProvider>
   );
 };

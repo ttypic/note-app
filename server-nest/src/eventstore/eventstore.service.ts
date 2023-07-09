@@ -134,13 +134,16 @@ export class EventStoreService implements OnModuleInit, OnModuleDestroy {
           version: request.version,
         });
         userIds.forEach(userId => {
-          this.eventEmitter.emit(appliedEvent.eventType, { ...appliedEvent, userId });
+          this.eventEmitter.emit(appliedEvent.eventType, { ...appliedEvent.dataValues, userId });
         });
         return;
       }
       case RequestType.userConnectRequest: {
-        const userState = await this.notesService.getUserState(request.userId, request.sessionId);
-        this.eventEmitter.emit(EventType.userConnected, userState);
+        try {
+          const userState = await this.notesService.getUserState(request.userId, request.sessionId);
+          this.eventEmitter.emit(EventType.userConnected, userState);
+        } catch {
+        }
         return;
       }
       case RequestType.shareNoteRequest: {

@@ -31,7 +31,6 @@ export interface DataContextProps {
    * JWT access token
    */
   accessToken: string;
-
   /**
    * Fire local note change event
    */
@@ -45,7 +44,12 @@ export interface DataContextProps {
   /**
    * Create note
    */
-  createNote(noteId: string): void;
+  createNote(): void;
+
+  /**
+   * Logout
+   */
+  logout(): void;
 }
 
 //onExternalNoteChange: (nextText: string, change: ExternalNoteChange) => void;
@@ -63,6 +67,8 @@ export const DataContext = React.createContext<DataContextProps>({
   selectNote: noop,
 
   createNote: noop,
+
+  logout: noop,
 
   currentNoteId: '',
 
