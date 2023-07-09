@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import * as uuid from 'uuid';
 import { WS_URL } from 'global/urls';
 import { DataContext, DataContextProps } from './DataContext';
 import { ConnectionStatus, EventType, LocalNoteChange, Note, RequestType } from './DataContext.types';
 import { applyOpTransform } from './applyOpTransform';
-import { notifyNoteUpdated } from './DataProvider.emitter';
+import { NoteUpdatedPayload, notifyNoteUpdated } from './DataProvider.emitter';
 
 const applyUpdate = (text: string, startSelection: number, endSelection: number, replacement: string): string =>
   text.slice(0, startSelection) + replacement + text.slice(endSelection);
@@ -31,6 +31,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
   const currentLocalChangeRef = useRef<LocalNoteChange | null>(null);
   const localChangesRef = useRef<LocalNoteChange[]>([]);
   const noteIdToVersion = useRef<Record<string, number>>({});
+
+  const externalChangesRef = useRef<Record<string, NoteUpdatedPayload>>({});
 
   const processNext = useCallback(() => {
     const change = localChangesRef.current.shift();
@@ -86,24 +88,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
           return;
         case EventType.noteUpdated: {
           const localChange = currentLocalChangeRef.current?.id === data.clientId;
-          const noLocalChanges = currentLocalChangeRef.current === null;
           noteIdToVersion.current[data.noteId] = data.noteVersion;
           setNotes(prevNotes => prevNotes.map(it => {
             if (it.id !== data.noteId) return it;
 
             const serverText = applyUpdate(it.text, data.startSelection, data.endSelection, data.replacement);
 
-            if (noLocalChanges) {
-              notifyNoteUpdated({
+            if (!localChange) {
+              externalChangesRef.current[data.serverId] = {
                 nextText: serverText,
                 change: data,
-              });
-            } else if (!localChange) {
-              notifyNoteUpdated({
-                nextText: [currentLocalChangeRef.current!!, ...localChangesRef.current]
-                  .reduce((text, change) => applyUpdate(text, change.startSelection, change.endSelection, change.replacement), serverText),
-                change: data,
-              });
+              };
             }
 
             return {
@@ -167,6 +162,24 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
       setConnectionStatus(ConnectionStatus.connecting);
     }
   }, [connectionStatus, readyState, sendJsonMessage]);
+
+  useLayoutEffect(() => {
+    const noLocalChanges = currentLocalChangeRef.current === null;
+    Object.keys(externalChangesRef.current).forEach(id => {
+      const payload = externalChangesRef.current[id];
+      const { change, nextText } = payload;
+      if (noLocalChanges) {
+        notifyNoteUpdated(payload);
+      } else {
+        notifyNoteUpdated({
+          nextText: [currentLocalChangeRef.current!!, ...localChangesRef.current].filter(it => it.noteId === change.noteId)
+            .reduce((text, change) => applyUpdate(text, change.startSelection, change.endSelection, change.replacement), nextText),
+          change,
+        });
+      }
+    });
+    externalChangesRef.current = {};
+  }, [notes, sharedNotes]);
 
 
   const value: DataContextProps = useMemo(() => {

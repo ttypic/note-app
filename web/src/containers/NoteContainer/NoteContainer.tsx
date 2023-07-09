@@ -1,19 +1,13 @@
 import React, { ChangeEventHandler, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as uuid from 'uuid';
-import { useAppData } from 'providers/DataProvider';
-import { calculateDiff } from 'utils/calculateDiff';
+import { NoteUpdatedPayload, useAppData } from 'providers/DataProvider';
+import { calculateDiff, SelectionRange } from 'utils/calculateDiff';
+import { useValueRef } from 'utils/useValueRef';
 import { ArrowLeftIcon } from 'components/Icon';
 import { BackButton, NoteHeader, NoteTextarea, NoteTextareaContainer } from './NoteContainer.styled';
-import { useValueRef } from '../../utils/useValueRef';
-import { NoteUpdatedPayload } from '../../providers/DataProvider/DataProvider.emitter';
 
 interface NoteContainerProps {
   defaultText: string;
-}
-
-interface SelectionRange {
-  start: number;
-  end: number;
 }
 
 const getCursorPosition = (textarea: HTMLTextAreaElement | null): SelectionRange | undefined => {
@@ -42,6 +36,7 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
         selectionRef.current.start += shift;
         selectionRef.current.end += shift;
       }
+      console.log('applied', payload.change, shift, selectionRef.current);
     },
   });
   const valueRef = useValueRef(value);
@@ -49,12 +44,14 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
   const handleChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>(event => {
     const nextValue = event.target.value;
     setValue(nextValue);
-    selectionRef.current = getCursorPosition(textareaRef.current)!!;
+    const prevPosition = selectionRef.current;
+    const nextPosition = getCursorPosition(textareaRef.current)!!;
+    selectionRef.current = nextPosition;
     emitNoteChange({
       id: uuid.v4(),
       userId,
       noteId: currentNoteId,
-      ...calculateDiff(valueRef.current, nextValue),
+      ...calculateDiff(valueRef.current, nextValue, prevPosition, nextPosition),
     });
   }, [emitNoteChange, userId]);
 
@@ -75,6 +72,7 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
       const cursorPosition = getCursorPosition(textareaRef.current);
       if (!cursorPosition) return;
       selectionRef.current = cursorPosition;
+      console.log('listen', selectionRef.current);
     };
 
     document.addEventListener('selectionchange', listener);
