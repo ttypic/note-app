@@ -1,7 +1,16 @@
 package com.ttypic.notesapp.decompose.home
 
-data class NoteUpdate(
+data class ExternalNoteUpdate(
     val nextText: String,
+    val change: NoteUpdatedEventData,
+)
+
+data class LocalNoteChange(
+    val id: String,
+    val noteId: String,
+    val replacement: String,
+    val startSelection: Int,
+    val endSelection: Int,
 )
 
 @Suppress("EnumEntryName")

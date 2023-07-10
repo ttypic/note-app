@@ -45,6 +45,7 @@ data class NoteUpdatedEvent(val data: NoteUpdatedEventData)
 @Serializable
 data class NoteUpdatedEventData(
     val userId: Int,
+    val clientId: String,
     val noteId: String,
     val noteVersion: Int,
     val replacement: String,
@@ -77,6 +78,20 @@ data class NoteCreateRequest(
 
 @Serializable
 data class NoteCreateRequestData(
+    val id: String,
+    val noteId: String,
+    val userId: Int,
+)
+
+
+@Serializable
+data class NoteUpdateRequest(
+    val event: String,
+    val data: NoteUpdateRequestData,
+)
+
+@Serializable
+data class NoteUpdateRequestData(
     val id: String,
     val noteId: String,
     val userId: Int,

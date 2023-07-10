@@ -59,9 +59,9 @@ class DefaultHomeComponent(
     private val sendMessageFlow = MutableSharedFlow<String>()
 
     private val model: MutableValue<NotesDataModel> = MutableValue(NotesDataModel())
-    private val noteUpdates = MutableSharedFlow<NoteUpdate>()
+    private val noteUpdates = MutableSharedFlow<ExternalNoteUpdate>()
 
-    private val localChanges = ArrayDeque<NoteUpdate>()
+    private val localChanges = ArrayDeque<LocalNoteChange>()
 
     init {
         scope.launch {
@@ -130,18 +130,26 @@ class DefaultHomeComponent(
                 }
                 EventType.noteUpdated -> {
                     val noteUpdated = json.decodeFromString<NoteUpdatedEvent>(message)
+                    val changeIsLocal = localChanges.firstOrNull()?.id == noteUpdated.data.clientId
+
                     val updater = updater@{ note: Note ->
                         if (noteUpdated.data.noteId != note.id) return@updater note
                         val replacement = noteUpdated.data.replacement
                         val startSelection = noteUpdated.data.startSelection
                         val endSelection = noteUpdated.data.endSelection
+                        val nextText = applyUpdate(
+                            note.text,
+                            startSelection,
+                            endSelection,
+                            replacement
+                        )
+                        if (!changeIsLocal) {
+                            scope.launch {
+                                noteUpdates.emit(ExternalNoteUpdate(nextText, noteUpdated.data))
+                            }
+                        }
                         note.copy(
-                            text = applyUpdate(
-                                note.text,
-                                startSelection,
-                                endSelection,
-                                replacement
-                            ),
+                            text = nextText,
                             version = noteUpdated.data.noteVersion,
                         )
                     }
@@ -151,38 +159,12 @@ class DefaultHomeComponent(
                             sharedNotes = it.sharedNotes.map(updater),
                         )
                     }
-//                    const localChange = currentLocalChangeRef.current?.id === data.clientId;
-//                    noteIdToVersion.current[data.noteId] = data.noteVersion;
-//                    const noteUpdater = (prevNotes: Note[]) => prevNotes.map(it => {
-//                        if (it.id !== data.noteId) return it;
-//
-//                        const serverText = applyUpdate(it.text, data.startSelection, data.endSelection, data.replacement);
-//
-//                        if (!localChange) {
-//                            externalChangesRef.current[data.serverId] = {
-//                                    nextText: serverText,
-//                                    change: data,
-//                            };
-//                        }
-//
-//                        return {
-//                            ...it,
-//                            text: serverText,
-//                            version: data.noteVersion,
-//                        } as Note;
-//                    });
-//                    setNotes(noteUpdater);
-//                    setSharedNotes(noteUpdater);
-//                    if (currentLocalChangeRef.current === null) return;
-//                    if (localChange) {
-//                        processNext();
-//                        return;
-//                    }
-//                    if (applyOpTransform(currentLocalChangeRef.current!!, data)) {
-//                        localChangesRef.current.unshift(currentLocalChangeRef.current!!);
-//                        processNext();
-//                    }
-//                    localChangesRef.current.forEach(it => applyOpTransform(it, data));
+
+                    if (changeIsLocal) {
+                        processNext()
+                    } else {
+                        // apply OT
+                    }
                 }
                 EventType.noteShared -> {
                     val noteShared = json.decodeFromString<NoteSharedEvent>(message)
@@ -229,6 +211,7 @@ class DefaultHomeComponent(
                     config.noteId,
                     (model.value.notes + model.value.sharedNotes).find { it.id == config.noteId }?.text
                         ?: "",
+                    noteUpdates,
                     ::onBackClicked,
                     ::onShareNoteClicked
                 )
@@ -279,6 +262,24 @@ class DefaultHomeComponent(
             )
         }
         navigation.push(Config.Note(noteId))
+    }
+
+    private fun processNext() {
+//        localChanges.removeFirstOrNull()
+//        localChanges.firstOrNull()?.let {
+//            scope.launch {
+//                sendMessageFlow.emit(
+//                    json.encodeToString(
+//                        NoteUpdateRequest(
+//                            event = RequestType.noteUpdateRequest.name,
+//                            data = NoteUpdateRequestData(
+//
+//                            )
+//                        )
+//                    )
+//                )
+//            }
+//        }
     }
 
     private sealed interface Config : Parcelable {
