@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 include(":server-nest")
 include(":androidApp")
 include(":shared")
+include(":web")

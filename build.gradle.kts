@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform).apply(false)
     alias(libs.plugins.serialization).apply(false)
     alias(libs.plugins.sqldelight).apply(false)
-    alias(libs.plugins.cklib).apply(false)
+    alias(libs.plugins.node).apply(false)
 }
 
 tasks.register("clean", Delete::class) {
