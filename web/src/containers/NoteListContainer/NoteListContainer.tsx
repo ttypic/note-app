@@ -10,7 +10,7 @@ interface NoteListContainerProps {
 }
 
 export const NoteListContainer: React.FC<NoteListContainerProps> = () => {
-  const { currentNoteId, createNote, logout, notes, sharedNotes, selectNote } = useAppData();
+  const { accessToken, currentNoteId, createNote, logout, notes, sharedNotes, selectNote } = useAppData();
 
   return (
     <LeftPanel open={!currentNoteId}>
@@ -29,13 +29,13 @@ export const NoteListContainer: React.FC<NoteListContainerProps> = () => {
         </UnstyledButton>
       </Flex>
       <Spacer height={4} />
-      <NoteList notes={notes} currentNoteId={currentNoteId} onSelect={selectNote} />
+      <NoteList notes={notes} accessToken={accessToken} currentNoteId={currentNoteId} owned onSelect={selectNote} />
       <Spacer height={8} />
       <Flex>
         Shared With Me
       </Flex>
       <Spacer height={4} />
-      <NoteList notes={sharedNotes} currentNoteId={currentNoteId} onSelect={selectNote} />
+      <NoteList notes={sharedNotes} currentNoteId={currentNoteId} accessToken={accessToken} onSelect={selectNote} />
     </LeftPanel>
   );
 };

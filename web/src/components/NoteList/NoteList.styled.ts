@@ -14,7 +14,6 @@ export const NoteRowTitle = styled.div<{ $untitled: boolean }>`
 
 export const NoteRowShare = styled.div`
   flex: 0 0 24px;
-  display: none;
 `;
 
 const lightPrimary = lighten(0.3, primaryColor);
@@ -28,6 +27,7 @@ export const NoteRow = styled.div<{ selected: boolean }>`
   font-size: 14px;
   background-color: ${({ selected }) => selected ? lightPrimary : 'transparent'};
   cursor: pointer;
+  line-height: 20px;
 
   &:hover > * {
     display: block;

@@ -99,7 +99,7 @@ export class NotesService {
           transaction: tx,
         });
 
-        const userIds = [...sharedUsers.map(it => it.userId), userId];
+        const userIds = [...sharedUsers.map(it => it.userId), note.userId];
 
         return { appliedEvent, userIds };
       });

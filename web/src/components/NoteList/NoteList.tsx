@@ -1,14 +1,14 @@
 import React, { useCallback } from 'react';
 import { Note } from 'providers/DataProvider';
-import { UnstyledButton } from '../Button';
-import { ShareIcon } from '../Icon';
+import { NoteShareButton } from 'containers/NoteShareButton';
 import { NoteRow, NoteRowShare, NoteRowTitle } from './NoteList.styled';
 
 interface NoteListProps {
   notes: Note[];
 
+  accessToken: string;
   currentNoteId: string;
-  onShare?: (noteId: string) => void;
+  owned?: boolean;
 
   onSelect(noteId: string): void;
 }
@@ -17,30 +17,26 @@ interface NoteComponentProps {
   note: Note;
 
   selected: boolean;
+  owned?: boolean;
+  accessToken: string;
   onShare?: (noteId: string) => void;
 
   onSelect(noteId: string): void;
 }
 
-const NoteComponent: React.FC<NoteComponentProps> = ({ note, selected, onSelect, onShare }) => {
+const NoteComponent: React.FC<NoteComponentProps> = ({ note, selected, accessToken, onSelect, owned }) => {
   const title = note.text.trimStart().split('\n')[0] ?? '';
 
   const handleRowClick = useCallback(() => {
     onSelect(note.id);
   }, [note, onSelect]);
 
-  const handleShareClick = useCallback(() => {
-    onShare?.(note.id);
-  }, [note, onShare]);
-
   return (
     <NoteRow selected={selected} onClick={handleRowClick}>
       <NoteRowTitle $untitled={!title}>{title || 'Untitled'}</NoteRowTitle>
-      {onShare && selected && (
+      {owned && selected && (
         <NoteRowShare>
-          <UnstyledButton onClick={handleShareClick} title='Share'>
-            <ShareIcon />
-          </UnstyledButton>
+          <NoteShareButton noteId={note.id} accessToken={accessToken} />
         </NoteRowShare>
       )}
     </NoteRow>
@@ -48,12 +44,18 @@ const NoteComponent: React.FC<NoteComponentProps> = ({ note, selected, onSelect,
 };
 
 
-export const NoteList: React.FC<NoteListProps> = ({ notes, currentNoteId, onSelect, onShare }) => {
+export const NoteList: React.FC<NoteListProps> = ({ notes, accessToken, currentNoteId, owned, onSelect }) => {
   // noinspection TypeScriptValidateTypes
   return (
     <div>
-      {notes.map(note => <NoteComponent key={note.id} note={note} selected={note.id === currentNoteId}
-                                        onSelect={onSelect} onShare={onShare} />)}
+      {notes.map(note =>
+        <NoteComponent
+          key={note.id}
+          accessToken={accessToken}
+          note={note}
+          owned={owned}
+          selected={note.id === currentNoteId}
+          onSelect={onSelect} />)}
     </div>
   );
 };

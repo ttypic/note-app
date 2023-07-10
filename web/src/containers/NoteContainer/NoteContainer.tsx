@@ -5,6 +5,7 @@ import { calculateDiff, SelectionRange } from 'utils/calculateDiff';
 import { useValueRef } from 'utils/useValueRef';
 import { ArrowLeftIcon } from 'components/Icon';
 import { BackButton, NoteHeader, NoteTextarea, NoteTextareaContainer } from './NoteContainer.styled';
+import { NoteShareButton } from '../NoteShareButton';
 
 interface NoteContainerProps {
   defaultText: string;
@@ -25,7 +26,7 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
   const selectionRef = useRef<SelectionRange>({ start: 0, end: 0 });
 
   const [value, setValue] = useState(defaultText);
-  const { userId, currentNoteId, emitNoteChange, selectNote } = useAppData({
+  const { accessToken, userId, currentNoteId, emitNoteChange, selectNote } = useAppData({
     onNoteUpdated: (payload: NoteUpdatedPayload) => {
       if (payload.change.noteId !== currentNoteId) return;
 
@@ -44,7 +45,7 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
     const nextValue = event.target.value;
     setValue(nextValue);
     const prevPosition = selectionRef.current;
-    const nextPosition = getCursorPosition(textareaRef.current)!!;
+    const nextPosition = getCursorPosition(textareaRef.current) ?? { start: 0, end: 0 };
     selectionRef.current = nextPosition;
     emitNoteChange({
       id: uuid.v4(),
@@ -86,6 +87,7 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
         <BackButton onClick={handleBackClick}>
           <ArrowLeftIcon />
         </BackButton>
+        <NoteShareButton accessToken={accessToken} noteId={currentNoteId} />
       </NoteHeader>
       {currentNoteId && <NoteTextarea ref={textareaRef} value={value} onChange={handleChange} />}
     </NoteTextareaContainer>

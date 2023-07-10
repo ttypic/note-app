@@ -5,15 +5,20 @@ import { useIsMounted } from './useIsMounted';
 interface UseHttpCallArgs {
   method: 'POST' | 'GET';
   path: string;
+  accessToken?: string;
 }
 
 interface CallOptions<RESPONSE, REQUEST> {
   body: REQUEST;
 
-  onSuccess(response: RESPONSE): void;
+  onSuccess?(response: RESPONSE): void;
 }
 
-export const useHttpCall = <RESPONSE = undefined, REQUEST = undefined>({ method = 'GET', path }: UseHttpCallArgs) => {
+export const useHttpCall = <RESPONSE = undefined, REQUEST = undefined>({
+                                                                         method = 'GET',
+                                                                         path,
+                                                                         accessToken,
+                                                                       }: UseHttpCallArgs) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [data, setData] = useState<RESPONSE>();
@@ -28,6 +33,9 @@ export const useHttpCall = <RESPONSE = undefined, REQUEST = undefined>({ method 
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(accessToken ? {
+            'Authorization': `Bearer ${accessToken}`,
+          } : {}),
         },
         body: JSON.stringify(body),
       });
@@ -37,7 +45,7 @@ export const useHttpCall = <RESPONSE = undefined, REQUEST = undefined>({ method 
         if (isMounted()) {
           setLoading(false);
           setData(responseData);
-          onSuccess(responseData);
+          onSuccess?.(responseData);
         }
       } else if (isMounted()) {
         setLoading(false);
