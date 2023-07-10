@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.ttypic.notesapp.decompose.home.SelectionRange
@@ -64,7 +65,13 @@ fun NoteContent(component: NoteComponent, modifier: Modifier = Modifier) {
 
         DisposableEffect(Unit) {
             val flowSubscription = component.noteUpdates.onEach {
-                text.value = TextFieldValue(it.nextText)
+                var selection = text.value.selection
+                if (selection.start >= it.change.endSelection) {
+                    val shift =
+                        it.change.replacement.length - (it.change.endSelection - it.change.startSelection)
+                    selection = TextRange(selection.start + shift, selection.end + shift)
+                }
+                text.value = TextFieldValue(it.nextText, selection)
             }.launchIn(coroutineScope)
 
             onDispose {
