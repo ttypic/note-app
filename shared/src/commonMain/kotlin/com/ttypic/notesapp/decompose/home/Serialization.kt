@@ -95,4 +95,8 @@ data class NoteUpdateRequestData(
     val id: String,
     val noteId: String,
     val userId: Int,
+    val version: Int,
+    val replacement: String,
+    val startSelection: Int,
+    val endSelection: Int,
 )

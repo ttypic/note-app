@@ -62,6 +62,7 @@ class DefaultHomeComponent(
     private val noteUpdates = MutableSharedFlow<ExternalNoteUpdate>()
 
     private val localChanges = ArrayDeque<LocalNoteChange>()
+    private var awaitingChange: LocalNoteChange? = null
 
     init {
         scope.launch {
@@ -161,9 +162,13 @@ class DefaultHomeComponent(
                     }
 
                     if (changeIsLocal) {
+                        localChanges.removeFirst()
                         processNext()
                     } else {
-                        // apply OT
+                        localChanges.forEach {
+                            applyOpTransform(it, noteUpdated.data)
+                        }
+                        if (localChanges.firstOrNull()?.id != awaitingChange?.id) processNext()
                     }
                 }
                 EventType.noteShared -> {
@@ -213,7 +218,8 @@ class DefaultHomeComponent(
                         ?: "",
                     noteUpdates,
                     ::onBackClicked,
-                    ::onShareNoteClicked
+                    ::onShareNoteClicked,
+                    ::emitLocalChange,
                 )
             )
             is Config.ShareNote -> HomeComponent.Child.ShareNoteChild(
@@ -265,21 +271,35 @@ class DefaultHomeComponent(
     }
 
     private fun processNext() {
-//        localChanges.removeFirstOrNull()
-//        localChanges.firstOrNull()?.let {
-//            scope.launch {
-//                sendMessageFlow.emit(
-//                    json.encodeToString(
-//                        NoteUpdateRequest(
-//                            event = RequestType.noteUpdateRequest.name,
-//                            data = NoteUpdateRequestData(
-//
-//                            )
-//                        )
-//                    )
-//                )
-//            }
-//        }
+        awaitingChange = localChanges.firstOrNull()
+        awaitingChange?.let {
+            val version =
+                (model.value.notes + model.value.sharedNotes).find { n -> n.id == it.noteId }?.version
+                    ?: 0
+            scope.launch {
+                sendMessageFlow.emit(
+                    json.encodeToString(
+                        NoteUpdateRequest(
+                            event = RequestType.noteUpdateRequest.name,
+                            data = NoteUpdateRequestData(
+                                id = it.id,
+                                noteId = it.noteId,
+                                version = version + 1,
+                                userId = model.value.userId,
+                                startSelection = it.startSelection,
+                                endSelection = it.endSelection,
+                                replacement = it.replacement,
+                            )
+                        )
+                    )
+                )
+            }
+        }
+    }
+
+    private fun emitLocalChange(change: LocalNoteChange) {
+        localChanges.addLast(change)
+        if (awaitingChange == null) processNext()
     }
 
     private sealed interface Config : Parcelable {

@@ -6,11 +6,11 @@ data class ExternalNoteUpdate(
 )
 
 data class LocalNoteChange(
-    val id: String,
+    var id: String,
     val noteId: String,
     val replacement: String,
-    val startSelection: Int,
-    val endSelection: Int,
+    var startSelection: Int,
+    var endSelection: Int,
 )
 
 @Suppress("EnumEntryName")

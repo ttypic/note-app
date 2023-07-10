@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.ttypic.notesapp.decompose.home.SelectionRange
 import com.ttypic.notesapp.decompose.note.NoteComponent
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -76,7 +77,17 @@ fun NoteContent(component: NoteComponent, modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(16.dp),
             value = text.value,
-            onValueChange = { text.value = it },
+            onValueChange = {
+                if (text.value.text != it.text) {
+                    component.onLocalChange(
+                        text.value.text,
+                        it.text,
+                        SelectionRange(text.value.selection.start, text.value.selection.end),
+                        SelectionRange(it.selection.start, it.selection.end),
+                    )
+                }
+                text.value = it
+            },
         )
     }
 }
