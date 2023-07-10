@@ -13,6 +13,7 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,23 +50,40 @@ fun NoteListContent(component: NoteListComponent, modifier: Modifier = Modifier)
                 )
             }
         }
-        Text(
-            text = "My notes",
-            style = MaterialTheme.typography.h5,
-            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Text(
+                text = "My notes",
+                style = MaterialTheme.typography.h5,
+            )
+            IconButton(
+                onClick = { component.onAddNoteClicked() },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                )
+            }
+        }
+
         LazyColumn {
             items(
                 items = model.notes,
                 key = { it.id }
             ) { note ->
                 val text = note.text.trimStart().split("\n").firstOrNull()
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        component.onNoteSelected(note.id)
-                    }
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            component.onNoteSelected(note.id)
+                        }
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
                 ) {
                     Box(
                         modifier = Modifier

@@ -2,6 +2,7 @@ package com.ttypic.notesapp.decompose.home
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 @Suppress("EnumEntryName")
 enum class EventType {
     noteCreated,
@@ -66,4 +67,17 @@ data class UserConnectedEventData(
     val sharedNotes: List<Note>,
     val userId: Int,
     val username: String,
+)
+
+@Serializable
+data class NoteCreateRequest(
+    val event: String,
+    val data: NoteCreateRequestData,
+)
+
+@Serializable
+data class NoteCreateRequestData(
+    val id: String,
+    val noteId: String,
+    val userId: Int,
 )

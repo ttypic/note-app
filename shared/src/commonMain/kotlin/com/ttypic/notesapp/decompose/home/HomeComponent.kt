@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -114,7 +115,7 @@ class DefaultHomeComponent(
                 EventType.noteCreated -> {
                     val noteCreated = json.decodeFromString<NoteCreatedEvent>(message)
                     model.update {
-                        val local = it.notes.any { note -> note.id === noteCreated.data.noteId }
+                        val local = it.notes.any { note -> note.id == noteCreated.data.noteId }
                         if (local) it else it.copy(
                             notes = it.notes.toMutableList().apply {
                                 add(
@@ -219,6 +220,7 @@ class DefaultHomeComponent(
                     model,
                     onLogoutClicked,
                     ::onNoteSelected,
+                    ::onAddNoteClicked,
                 )
             )
             is Config.Note -> HomeComponent.Child.NoteChild(
@@ -251,6 +253,32 @@ class DefaultHomeComponent(
 
     private fun onShareNoteClicked(noteId: String) {
         navigation.push(Config.ShareNote(noteId))
+    }
+
+    private fun onAddNoteClicked() {
+        val noteId = uuid4().toString()
+        val userId = model.value.userId
+        val note = Note(id = noteId, userId = model.value.userId)
+        scope.launch {
+            sendMessageFlow.emit(
+                json.encodeToString(
+                    NoteCreateRequest(
+                        event = RequestType.noteCreateRequest.name,
+                        data = NoteCreateRequestData(
+                            noteId,
+                            noteId,
+                            userId,
+                        )
+                    )
+                )
+            )
+        }
+        model.update {
+            it.copy(
+                notes = it.notes + note
+            )
+        }
+        navigation.push(Config.Note(noteId))
     }
 
     private sealed interface Config : Parcelable {

@@ -11,6 +11,7 @@ interface NoteListComponent {
 
     val onLogoutClicked: () -> Unit
     val onNoteSelected: (noteId: String) -> Unit
+    val onAddNoteClicked: () -> Unit
 
     data class Model(
         val notes: List<Note> = listOf(),
@@ -23,6 +24,7 @@ class DefaultNoteListComponent(
     notesDataModel: Value<NotesDataModel>,
     override val onLogoutClicked: () -> Unit,
     override val onNoteSelected: (noteId: String) -> Unit,
+    override val onAddNoteClicked: () -> Unit,
 ) : NoteListComponent, ComponentContext by componentContext {
 
     override val model: Value<NoteListComponent.Model> = notesDataModel.map {
