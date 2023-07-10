@@ -3,6 +3,9 @@
 /node_modules
 /.gradle
 
+# Local
+local.properties
+
 # Logs
 logs
 *.log

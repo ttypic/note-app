@@ -2,7 +2,6 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("com.android.library")
-    id("com.squareup.sqldelight")
     id("kotlin-parcelize")
 }
 
@@ -34,9 +33,11 @@ kotlin {
             dependencies {
                 implementation(libs.coroutines.core)
                 implementation(libs.bundles.common.ktor)
-                implementation(libs.bundles.common.sqldelight)
                 implementation(libs.koin.core)
+                implementation(libs.ktor.cio)
+                implementation(libs.ktor.websockets)
                 implementation(libs.kermit)
+                implementation(libs.uuid)
                 api(libs.essenty.lifecycle)
                 api(libs.decompose)
             }
@@ -48,13 +49,7 @@ kotlin {
         }
         @Suppress("UNUSED_VARIABLE")
         val androidMain by getting {
-            dependencies {
-                implementation(libs.ktor.android)
-                implementation(libs.sqldelight.android)
-            }
         }
-        @Suppress("UNUSED_VARIABLE")
-        val androidTest by getting
         val iosX64Main by getting
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
@@ -64,11 +59,6 @@ kotlin {
             iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
             iosSimulatorArm64Main.dependsOn(this)
-
-            dependencies {
-                implementation(libs.ktor.ios)
-                implementation(libs.sqldelight.ios)
-            }
         }
         val iosX64Test by getting
         val iosArm64Test by getting
@@ -86,17 +76,8 @@ kotlin {
 @Suppress("UnstableApiUsage")
 android {
     namespace = "com.ttypic.notesapp"
-    compileSdk = 32
+    compileSdk = 33
     defaultConfig {
         minSdk = 28
     }
-}
-
-sqldelight {
-    database("AppDatabase") {
-        packageName = "com.ttypic.notesapp.db"
-        sourceFolders = listOf("sqldelight")
-    }
-    // Need to go to Xcode and add `-lsqlite3` to `Other Liker Flags` in your `Build Settings`
-    linkSqlite = true
 }
