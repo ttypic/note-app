@@ -2,13 +2,11 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import * as uuid from 'uuid';
 import { WS_URL } from 'global/urls';
+import { applyUpdate } from 'utils/calculateDiff';
 import { DataContext, DataContextProps } from './DataContext';
 import { ConnectionStatus, EventType, LocalNoteChange, Note, RequestType } from './DataContext.types';
 import { applyOpTransform } from './applyOpTransform';
 import { NoteUpdatedPayload, notifyNoteUpdated } from './DataProvider.emitter';
-
-const applyUpdate = (text: string, startSelection: number, endSelection: number, replacement: string): string =>
-  text.slice(0, startSelection) + replacement + text.slice(endSelection);
 
 export interface DataProviderProps {
   accessToken: string;
@@ -67,6 +65,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
           (data.sharedNotes as Note[]).forEach(it => noteIdToVersion.current[it.id] = it.version);
           return;
         case EventType.noteShared:
+          noteIdToVersion.current[data.note.id] = data.note.version;
           setSharedNotes(prevNotes => [...prevNotes, {
             id: data.note.id,
             userId: data.note.userId,

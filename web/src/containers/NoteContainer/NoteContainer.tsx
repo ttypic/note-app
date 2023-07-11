@@ -1,7 +1,7 @@
 import React, { ChangeEventHandler, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as uuid from 'uuid';
 import { NoteUpdatedPayload, useAppData } from 'providers/DataProvider';
-import { calculateDiff, SelectionRange } from 'utils/calculateDiff';
+import { applyUpdate, calculateDiff, SelectionRange } from 'utils/calculateDiff';
 import { useValueRef } from 'utils/useValueRef';
 import { ArrowLeftIcon } from 'components/Icon';
 import { BackButton, NoteHeader, NoteTextarea, NoteTextareaContainer } from './NoteContainer.styled';
@@ -43,16 +43,20 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
 
   const handleChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>(event => {
     const nextValue = event.target.value;
-    setValue(nextValue);
     const prevPosition = selectionRef.current;
     const nextPosition = getCursorPosition(textareaRef.current) ?? { start: 0, end: 0 };
     selectionRef.current = nextPosition;
+    const diff = calculateDiff(valueRef.current, nextValue, prevPosition, nextPosition);
+
+    if (applyUpdate(valueRef.current, diff.startSelection, diff.endSelection, diff.replacement) !== nextValue) return;
+
     emitNoteChange({
       id: uuid.v4(),
       userId,
       noteId: currentNoteId,
-      ...calculateDiff(valueRef.current, nextValue, prevPosition, nextPosition),
+      ...diff,
     });
+    setValue(nextValue);
   }, [emitNoteChange, userId]);
 
   const handleBackClick = useCallback(() => {

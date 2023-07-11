@@ -9,6 +9,8 @@ export interface SelectionRange {
   end: number;
 }
 
+export const applyUpdate = (text: string, startSelection: number, endSelection: number, replacement: string): string =>
+  text.slice(0, startSelection) + replacement + text.slice(endSelection);
 
 /**
  * ab|c - 2 -> abx|c - 3 -> Diff(start=2, end=2,'x')
