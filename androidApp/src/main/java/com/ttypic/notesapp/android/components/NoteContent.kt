@@ -1,5 +1,6 @@
 package com.ttypic.notesapp.android.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,8 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.ttypic.notesapp.decompose.home.SelectionRange
+import com.ttypic.notesapp.decompose.home.applyUpdate
+import com.ttypic.notesapp.decompose.home.calculateDiff
 import com.ttypic.notesapp.decompose.note.NoteComponent
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -84,14 +87,31 @@ fun NoteContent(component: NoteComponent, modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(16.dp),
             value = text.value,
-            onValueChange = {
+            onValueChange = onValueChange@{
                 if (text.value.text != it.text) {
-                    component.onLocalChange(
+                    val position =
+                        SelectionRange(text.value.selection.start, text.value.selection.end)
+                    val nextPosition = SelectionRange(it.selection.start, it.selection.end)
+                    val diff = calculateDiff(
                         text.value.text,
                         it.text,
-                        SelectionRange(text.value.selection.start, text.value.selection.end),
-                        SelectionRange(it.selection.start, it.selection.end),
+                        position,
+                        nextPosition,
                     )
+                    if (applyUpdate(
+                            text.value.text,
+                            diff.start,
+                            diff.end,
+                            diff.replacement
+                        ) != it.text
+                    ) {
+                        Log.w(
+                            "NOTE UPDATE",
+                            "Update has been calculated wrong, text=${text.value.text} nextText=${it.text} position=$position nextPosition=$nextPosition"
+                        )
+                        return@onValueChange
+                    }
+                    component.onLocalChange(diff)
                 }
                 text.value = it
             },
