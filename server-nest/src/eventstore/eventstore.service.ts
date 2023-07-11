@@ -147,8 +147,11 @@ export class EventStoreService implements OnModuleInit, OnModuleDestroy {
         return;
       }
       case RequestType.shareNoteRequest: {
-        const response = await this.notesService.shareNote(request.userId, request.noteId, request.sharedWith);
-        this.eventEmitter.emit(EventType.noteShared, response);
+        try {
+          const response = await this.notesService.shareNote(request.userId, request.noteId, request.sharedWith);
+          this.eventEmitter.emit(EventType.noteShared, response);
+        } catch {
+        }
         return;
       }
       default:
