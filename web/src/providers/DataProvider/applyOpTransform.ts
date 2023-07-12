@@ -10,5 +10,6 @@ export const applyOpTransform = (localChange: LocalNoteChange, externalChange: E
     localChange.endSelection = localChange.endSelection + shift;
     return true;
   }
-  return false;
+  localChange.id = uuid.v4();
+  return true;
 };

@@ -35,4 +35,5 @@ fun applyOpTransform(localChange: LocalNoteChange, externalChange: NoteUpdatedEv
         localChange.startSelection = localChange.startSelection + shift
         localChange.endSelection = localChange.endSelection + shift
     }
+    localChange.id = uuid4().toString()
 }
