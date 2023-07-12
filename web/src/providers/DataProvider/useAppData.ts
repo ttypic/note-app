@@ -20,7 +20,7 @@ export const useAppData = ({ onNoteUpdated }: UseAppDataArgs = {}) => {
     return subscribeNoteUpdated((payload) => {
       onNoteUpdatedRef.current?.(payload);
     });
-  }, []);
+  }, [onNoteUpdatedRef]);
 
   return {
     ...context,

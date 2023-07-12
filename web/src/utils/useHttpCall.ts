@@ -57,7 +57,7 @@ export const useHttpCall = <RESPONSE = undefined, REQUEST = undefined>({
         setError(true);
       }
     }
-  }, [method, isMountedRef, path]);
+  }, [accessToken, method, isMountedRef, path]);
 
   return {
     data,

@@ -13,11 +13,11 @@ interface NoteContainerProps {
 
 const getCursorPosition = (textarea: HTMLTextAreaElement | null): SelectionRange | undefined => {
   const start = textarea?.selectionStart;
-  if (!start) return undefined;
+  if (typeof start !== 'number') return undefined;
 
   return {
     start,
-    end: textarea?.selectionEnd ?? start,
+    end: textarea?.selectionEnd ?? 0,
   };
 };
 
@@ -48,7 +48,10 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
     selectionRef.current = nextPosition;
     const diff = calculateDiff(valueRef.current, nextValue, prevPosition, nextPosition);
 
-    if (applyUpdate(valueRef.current, diff.startSelection, diff.endSelection, diff.replacement) !== nextValue) return;
+    if (applyUpdate(valueRef.current, diff.startSelection, diff.endSelection, diff.replacement) !== nextValue) {
+      console.warn('Wrong diff calculated', valueRef.current, nextValue, prevPosition, nextPosition);
+      return;
+    }
 
     emitNoteChange({
       id: uuid.v4(),
@@ -57,7 +60,7 @@ export const NoteContainer: React.FC<NoteContainerProps> = ({ defaultText }) => 
       ...diff,
     });
     setValue(nextValue);
-  }, [emitNoteChange, userId]);
+  }, [emitNoteChange, userId, currentNoteId, valueRef]);
 
   const handleBackClick = useCallback(() => {
     selectNote('');

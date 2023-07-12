@@ -26,7 +26,7 @@ export const calculateDiff = (value: string, nextValue: string, prevPosition: Se
     return {
       startSelection: endNext,
       endSelection: endPrev,
-      replacement: nextValue.slice(startPrev, endNext),
+      replacement: '',
     };
   } else {
     return {

@@ -32,17 +32,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
 
   const externalChangesRef = useRef<Record<string, NoteUpdatedPayload>>({});
 
-  const processNext = useCallback(() => {
-    const change = localChangesRef.current.shift();
-    currentLocalChangeRef.current = change ?? null;
-    if (!change) return;
-    const noteVersion = noteIdToVersion.current[change.noteId] ?? 0;
-    sendJsonMessage({
-      event: RequestType.noteUpdateRequest,
-      data: { ...change, version: noteVersion + 1 },
-    });
-  }, []);
-
   const { sendJsonMessage, readyState } = useWebSocket(WS_URL, {
     shouldReconnect: () => {
       setConnectionStatus(ConnectionStatus.idle);
@@ -130,6 +119,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
     },
   });
 
+  const processNext = useCallback(() => {
+    const change = localChangesRef.current.shift();
+    currentLocalChangeRef.current = change ?? null;
+    if (!change) return;
+    const noteVersion = noteIdToVersion.current[change.noteId] ?? 0;
+    sendJsonMessage({
+      event: RequestType.noteUpdateRequest,
+      data: { ...change, version: noteVersion + 1 },
+    });
+  }, [sendJsonMessage]);
+
   const emitNoteChange = useCallback((change: LocalNoteChange) => {
     localChangesRef.current.push(change);
     if (currentLocalChangeRef.current === null) {
@@ -162,7 +162,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
       setSessionId(id);
       setConnectionStatus(ConnectionStatus.connecting);
     }
-  }, [connectionStatus, readyState, sendJsonMessage]);
+  }, [accessToken, connectionStatus, readyState, sendJsonMessage]);
 
   useLayoutEffect(() => {
     const noLocalChanges = currentLocalChangeRef.current === null;
@@ -206,6 +206,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ accessToken, logout,
     currentNoteId,
     userId,
     username,
+    createNote,
+    emitNoteChange,
   ]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
