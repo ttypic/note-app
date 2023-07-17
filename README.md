@@ -4,7 +4,7 @@ This is real-time collaborative notes proof-of-concept.
 
 This monorepo has several modules:
 
-1. `server-nest/` - monolithic Node.JS server, that communicate with clients through WebSocket
+1. `server/` - monolithic Node.JS server, that communicate with clients through WebSocket
    protocol
 2. `web/` - React-based client
 3. `androidApp/` - Android client

@@ -1,4 +1,4 @@
-import { Table, Column, Unique, Model } from 'sequelize-typescript';
+import { Column, Model, Table, Unique } from 'sequelize-typescript';
 
 // noinspection JSAnnotator
 @Table

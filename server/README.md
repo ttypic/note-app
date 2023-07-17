@@ -21,7 +21,7 @@ or if `Node` haven't installed:
 2. Run
 
 ```shell
-./gradlew :server-nest:start
+./gradlew :server:start
 ```
 
 ## Project structure
